@@ -4,7 +4,7 @@ Cody is a personal AI-powered code assistant designed to be your pair programmer
 
 This project is a multi-part application demonstrating how to build a sophisticated AI tool from the ground up, combining a Python backend, a React frontend, and a native VS Code extension.
 
-
+Video : https://tinyurl.com/475y4ww5
 ---
 
 ## Features
