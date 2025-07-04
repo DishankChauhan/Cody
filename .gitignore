@@ -1,0 +1,35 @@
+# --- Global ---
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS-generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- Project Specific ---
+# Local database for RAG
+cody_chroma_db/
+
+# --- Sub-project ignores ---
+# These are handled by their own .gitignore files but good to have here too
+/backend/venv/
+/backend/.venv/
+/backend/env/
+/backend/.env
+/frontend/node_modules/
+/vscode-extension/node_modules/
+/frontend/dist/
+/vscode-extension/out/ 
