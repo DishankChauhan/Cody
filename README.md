@@ -1,49 +1,44 @@
 # Cody AI Code Assistant
 
-A comprehensive AI-powered code assistant that integrates directly into VS Code, providing context-aware code generation, interactive chat, automated bug fixing, and live project awareness.
+Cody is a personal AI-powered code assistant designed to be your pair programmer. It started as a simple web-based code generator and has evolved into a powerful, context-aware VS Code extension that understands your entire codebase.
 
-## 🚀 Features
+This project is a multi-part application demonstrating how to build a sophisticated AI tool from the ground up, combining a Python backend, a React frontend, and a native VS Code extension.
 
-### Phase 1: Basic Web App
-- **Web-based Code Generator**: FastAPI backend with React frontend
-- **Multi-language Support**: Supports multiple programming languages
-- **Syntax Highlighting**: Beautiful code display with syntax highlighting
-- **Real-time Generation**: Instant code generation with OpenAI GPT-4o
+![Cody Screenshot](https://i.imgur.com/example.png) _(Note: Replace with an actual screenshot)_
 
-### Phase 2: Context-Aware Generation
-- **RAG (Retrieval-Augmented Generation)**: Uses ChromaDB vector database for codebase awareness
-- **Contextual Understanding**: Incorporates existing code context for better results
-- **Intelligent Suggestions**: Leverages project-specific patterns and conventions
+---
 
-### Phase 3: VS Code Extension
-- **Native Integration**: Right-click context menu commands
-- **Generate Code**: Refactor and modify selected code
-- **Explain Code**: Get detailed explanations in a beautiful webview
-- **Generate Tests**: Automatically create unit tests
+## Features
 
-### Phase 4: Advanced Features ✨ **NEW**
+-   **Code Generation**: Generate functions, classes, or code snippets from a natural language prompt.
+-   **Context-Aware Responses**: Provide existing code as context to get more accurate and relevant results.
+-   **VS Code Integration**:
+    -   Right-click on selected code to refactor, explain, or generate tests.
+    -   Seamlessly inserts generated code back into your editor.
+-   **Codebase Awareness (RAG)**:
+    -   Cody can index your entire project to understand its structure and content.
+    -   It automatically retrieves relevant code snippets from your codebase to provide highly contextual answers, even for code you haven't selected.
+-   **Explain Code**: Select a block of code and get a clear, structured explanation of its purpose, inputs, and outputs.
+-   **Generate Unit Tests**: Automatically generate unit tests for your functions or classes using popular testing frameworks.
 
-#### 1. Interactive Chat Panel
-- **Sidebar Chat**: Persistent chat panel in VS Code sidebar
-- **Conversation History**: Maintains context across multiple interactions
-- **Follow-up Questions**: Natural conversation flow ("Now refactor that", "Make it more performant")
-- **Context Awareness**: Automatically includes current editor selection
-- **Beautiful UI**: Themed chat interface with timestamps and formatting
+---
 
-#### 2. Automated Bug Fixing
-- **"Fix This Bug" Command**: Right-click on buggy code
-- **Error Analysis**: Paste error messages for targeted fixes
-- **Diff Viewer**: Shows original vs fixed code with visual diff
-- **One-click Apply**: Review and apply fixes with a single click
-- **Smart Suggestions**: Uses vector database to find similar patterns
+## Tech Stack
 
-#### 3. Live Project Awareness
-- **Automatic File Watching**: Monitors project files for changes
-- **Background Reindexing**: Automatically updates vector database
-- **Intelligent Debouncing**: Avoids excessive reindexing
-- **Always Up-to-date**: Ensures latest project context
+-   **Backend**: Python with **FastAPI** for a high-performance REST API.
+-   **AI Model**: **OpenAI GPT-4o** (or any other major LLM) for code generation and understanding.
+-   **Frontend**: **React** (built with Vite) for a fast and modern user interface.
+-   **Styling**: **Tailwind CSS** for utility-first styling.
+-   **Code Highlighting**: `react-syntax-highlighter` for displaying code beautifully.
+-   **VS Code Extension**: Built with **TypeScript** and the VS Code Extension API.
+-   **Vector Database**: **ChromaDB** for local, persistent storage of codebase embeddings.
+-   **Embeddings Model**: OpenAI `text-embedding-3-small` for creating vector representations of code.
 
-## 🛠️ Installation & Setup
+---
+
+## Getting Started: Running Cody Locally
+
+To run the full Cody suite (backend, frontend, and VS Code extension), follow these steps.
 
 ### Prerequisites
 - Python 3.8+
@@ -182,57 +177,19 @@ The extension automatically configures itself, but you can customize:
 
 ### Building for Production
 ```bash
-# Backend
-cd backend
-pip install -r requirements.txt
-
-# Frontend
-cd frontend
-npm run build
-
-# Extension
-cd vscode-extension
-npm run compile
+# From the project root directory
+# Make sure you use the same Python environment as the backend
+pip install -r backend/requirements.txt # Ensure dependencies are installed
+python backend/index_codebase.py .
 ```
+This command will scan the current project (`.`), create embeddings, and store them in a local `cody_chroma_db` directory. You only need to do this once per project, or re-run it to update the index.
 
-## 🔮 Future Roadmap
+### 4. Run the VS Code Extension
 
-### Phase 5: Marketplace & Distribution
-- [ ] Publish to VS Code Marketplace
-- [ ] Package as standalone installer
-- [ ] Add telemetry and analytics
+Finally, to use Cody inside your editor:
 
-### Phase 6: Advanced AI Features
-- [ ] Multi-file refactoring
-- [ ] Automated code reviews
-- [ ] Performance optimization suggestions
-- [ ] Security vulnerability detection
-
-### Phase 7: Collaboration & Scaling
-- [ ] Team collaboration features
-- [ ] Cloud-hosted backend option
-- [ ] Enterprise deployment guide
-- [ ] Custom model fine-tuning
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 🙏 Acknowledgments
-
-- OpenAI for GPT-4o API
-- ChromaDB for vector database
-- VS Code team for excellent extension APIs
-- React and FastAPI communities
-
----
-
-**Built with ❤️ for developers by developers** 
+1.  Open the `vscode-extension` folder in a **new VS Code window**.
+2.  Install the dependencies: `npm install`.
+3.  Press **`F5`** to start the **Extension Development Host**.
+4.  A new VS Code window will appear with the extension running. Open any code file in this new window.
+5.  Select some code, right-click, and use one of the "Cody" commands! 
