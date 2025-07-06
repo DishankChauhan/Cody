@@ -11,7 +11,9 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:cody.generateCode"
+    "onView:codyChat",
+    "onCommand:cody.generateCode",
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -27,8 +29,41 @@
       {
         "command": "cody.generateTests",
         "title": "Cody: Generate Unit Tests"
+      },
+      {
+        "command": "cody.fixBug",
+        "title": "Cody: Fix This Bug"
+      },
+      {
+        "command": "cody.clearChat",
+        "title": "Clear Chat",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "cody.reindexProject",
+        "title": "Cody: Re-index Project"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cody-sidebar",
+          "title": "Cody AI",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "cody-sidebar": [
+        {
+          "type": "webview",
+          "id": "codyChat",
+          "name": "Chat",
+          "icon": "$(comment-discussion)",
+          "contextualTitle": "Cody Chat"
+        }
+      ]
+    },
     "menus": {
       "editor/context": [
         {
@@ -45,6 +80,18 @@
           "when": "editorHasSelection",
           "command": "cody.generateTests",
           "group": "navigation"
+        },
+        {
+          "when": "editorHasSelection",
+          "command": "cody.fixBug",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "cody.clearChat",
+          "when": "view == codyChat",
+          "group": "navigation"
         }
       ]
     }
@@ -59,6 +106,7 @@
     "@types/markdown-it": "^14.1.2",
     "@types/node": "18.x",
     "@types/vscode": "^1.80.0",
+    "@types/diff": "^5.0.3",
     "@typescript-eslint/eslint-plugin": "^5.61.0",
     "@typescript-eslint/parser": "^5.61.0",
     "eslint": "^8.44.0",
@@ -66,6 +114,8 @@
   },
   "dependencies": {
     "axios": "^1.4.0",
-    "markdown-it": "^14.1.0"
+    "markdown-it": "^14.1.0",
+    "chokidar": "^3.5.3",
+    "diff": "^5.1.0"
   }
 }
