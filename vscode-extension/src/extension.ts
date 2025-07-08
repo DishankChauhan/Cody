@@ -4,34 +4,28 @@ import * as MarkdownIt from 'markdown-it';
 import * as diff from 'diff';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ConfigManager, registerConfigurationListener } from './config';
+import { ApiClient, ChatMessage, CodeEdit } from './apiClient';
 
 // Use dynamic import for chokidar to avoid type issues
 let chokidar: any;
 
 const md = new MarkdownIt();
 
-// Chat message interface
-interface ChatMessage {
+// Global state
+interface ChatMessageInternal {
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
     codeEdits?: any[];
 }
 
-interface CodeEdit {
-    file: string;
-    range: {
-        start: { line: number; character: number; };
-        end: { line: number; character: number; };
-    };
-    newText: string;
-}
-
-// Global chat history
-let chatHistory: ChatMessage[] = [];
+let chatHistory: ChatMessageInternal[] = [];
 let chatWebviewPanel: vscode.WebviewPanel | undefined;
 let fileWatcher: any | undefined;
 let isIndexing = false;
+let apiClient: ApiClient;
+let configManager: ConfigManager;
 
 async function makeApiCall(prompt: string, language: string, context: string) {
     return await axios.post('http://localhost:8000/generate', {
@@ -138,7 +132,7 @@ class CodyChatProvider implements vscode.WebviewViewProvider {
 
         try {
             // Add user message to history
-            const userMessage: ChatMessage = {
+            const userMessage: ChatMessageInternal = {
                 role: 'user',
                 content: message,
                 timestamp: new Date()
@@ -164,24 +158,23 @@ class CodyChatProvider implements vscode.WebviewViewProvider {
 
             console.log("CodyChatProvider: Making API call");
             // Make API call with code edit support
-            const response = await axios.post('http://localhost:8000/chat', {
-                prompt: message,
+            const response = await apiClient.chat(
+                message,
                 language,
                 context,
-                history: chatHistory.map(msg => ({
+                chatHistory.map(msg => ({
                     role: msg.role,
                     content: msg.content,
                     timestamp: msg.timestamp.toISOString()
                 })),
-                includeCodeEdits: true,
                 currentFile
-            });
+            );
 
-            console.log("CodyChatProvider: Received API response:", response.data);
+            console.log("CodyChatProvider: Received API response:", response);
 
-            if (response.data.response) {
+            if (response.success && response.data?.response) {
                 // Add assistant response to history
-                const assistantMessage: ChatMessage = {
+                const assistantMessage: ChatMessageInternal = {
                     role: 'assistant',
                     content: response.data.response,
                     timestamp: new Date()
@@ -198,13 +191,15 @@ class CodyChatProvider implements vscode.WebviewViewProvider {
                 }
 
                 this.updateChatView();
+            } else {
+                throw new Error(response.error || 'Failed to get response from API');
             }
         } catch (error: any) {
             console.error("CodyChatProvider: Error in handleChatMessage:", error);
             const errorMessage = error.message || 'Unknown error occurred';
             vscode.window.showErrorMessage(`Chat error: ${errorMessage}`);
             
-            const errorResponse: ChatMessage = {
+            const errorResponse: ChatMessageInternal = {
                 role: 'assistant',
                 content: `Error: Failed to get response. Please try again. (${errorMessage})`,
                 timestamp: new Date()
@@ -635,6 +630,13 @@ class CodyChatProvider implements vscode.WebviewViewProvider {
 export function activate(context: vscode.ExtensionContext) {
     console.log("Cody LOG: Activating extension...");
 
+    // Initialize configuration and API client
+    configManager = ConfigManager.getInstance();
+    apiClient = ApiClient.getInstance();
+
+    // Register configuration listener
+    registerConfigurationListener(context);
+
     // Register the chat provider
     const chatProvider = new CodyChatProvider(context.extensionUri);
     console.log("Cody LOG: Chat provider created.");
@@ -648,172 +650,100 @@ export function activate(context: vscode.ExtensionContext) {
     // Start file watching for live project awareness
     startFileWatching().catch(console.error);
 
+    // Check backend connection on startup
+    checkBackendConnection();
+
     // Helper function to register commands with error handling
     const registerCommand = (name: string, callback: (...args: any[]) => any) => {
         return vscode.commands.registerCommand(name, async (...args: any[]) => {
             try {
                 await callback(...args);
             } catch (error) {
-                vscode.window.showErrorMessage(`Cody Error: ${error}`);
+                const errorMsg = error instanceof Error ? error.message : String(error);
+                vscode.window.showErrorMessage(`Cody Error: ${errorMsg}`);
+                console.error(`Command ${name} failed:`, error);
             }
         });
     };
 
-    // Creates and shows a webview panel for displaying explanations
-    const createExplanationWebview = (title: string, content: string, extensionContext: vscode.ExtensionContext) => {
-        const panel = vscode.window.createWebviewPanel(
-            'codyExplanation',
-            title,
-            vscode.ViewColumn.Beside,
-            {
-                enableScripts: true
-            }
-        );
-
-        const htmlContent = md.render(content);
-        panel.webview.html = getWebviewContent(title, htmlContent);
-
-        panel.webview.onDidReceiveMessage(
-            message => {
-                switch (message.command) {
-                    case 'close':
-                        panel.dispose();
-                        return;
-                }
-            },
-            undefined,
-            extensionContext.subscriptions
-        );
-    };
-
-    // Creates and shows a diff webview for bug fixes
-    const createBugFixDiffWebview = (title: string, originalCode: string, fixedCode: string, extensionContext: vscode.ExtensionContext) => {
-        const panel = vscode.window.createWebviewPanel(
-            'codyBugFix',
-            title,
-            vscode.ViewColumn.Beside,
-            {
-                enableScripts: true
-            }
-        );
-
-        const diffResult = diff.createPatch('code', originalCode, fixedCode, 'Original', 'Fixed');
-        panel.webview.html = getBugFixWebviewContent(title, originalCode, fixedCode, diffResult);
-
-        panel.webview.onDidReceiveMessage(
-            message => {
-                switch (message.command) {
-                    case 'applyFix':
-                        applyBugFix(originalCode, fixedCode);
-                        panel.dispose();
-                        return;
-                    case 'close':
-                        panel.dispose();
-                        return;
-                }
-            },
-            undefined,
-            extensionContext.subscriptions
-        );
-    };
-
-    // Apply the bug fix to the editor
-    const applyBugFix = (originalCode: string, fixedCode: string) => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) return;
-
-        const selection = editor.selection;
-        const selectedText = editor.document.getText(selection);
-
-        if (selectedText === originalCode) {
-            editor.edit(editBuilder => {
-                editBuilder.replace(selection, fixedCode);
-            });
-            vscode.window.showInformationMessage('Bug fix applied successfully!');
-        } else {
-            vscode.window.showWarningMessage('Selected code has changed. Please reselect and try again.');
+    // Check backend connection
+    async function checkBackendConnection() {
+        const config = configManager.getConfig();
+        
+        if (config.debugMode) {
+            console.log("Checking backend connection...");
         }
-    };
 
-    // File watching for live project awareness
-    async function startFileWatching() {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) return;
-
-        try {
-            // Dynamic import for chokidar
-            chokidar = await import('chokidar');
-            
-            const watchPath = workspaceFolder.uri.fsPath;
-            
-            fileWatcher = chokidar.watch(watchPath, {
-                ignored: [
-                    '**/node_modules/**',
-                    '**/.git/**',
-                    '**/dist/**',
-                    '**/build/**',
-                    '**/*.log',
-                    '**/cody_chroma_db/**'
-                ],
-                persistent: true,
-                ignoreInitial: true
+        const healthResponse = await apiClient.checkHealth();
+        
+        if (!healthResponse.success) {
+            vscode.window.showErrorMessage(
+                `Failed to connect to Cody backend: ${healthResponse.error}`,
+                'Settings', 'Retry'
+            ).then(selection => {
+                if (selection === 'Settings') {
+                    vscode.commands.executeCommand('workbench.action.openSettings', 'cody');
+                } else if (selection === 'Retry') {
+                    checkBackendConnection();
+                }
             });
-
-            let reindexTimeout: NodeJS.Timeout;
-
-            fileWatcher.on('all', (event: string, filePath: string) => {
-                // Debounce reindexing to avoid too frequent updates
-                clearTimeout(reindexTimeout);
-                reindexTimeout = setTimeout(() => {
-                    if (!isIndexing) {
-                        reindexProject();
-                    }
-                }, 5000); // Wait 5 seconds after last change
-            });
-
-            console.log('File watching started for:', watchPath);
-        } catch (error) {
-            console.error('Failed to start file watching:', error);
+        } else if (config.debugMode) {
+            console.log("Backend connection successful");
         }
     }
 
     // COMMAND: Generate Code
     let generateCodeDisposable = registerCommand('cody.generateCode', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor) return;
+        if (!editor) {
+            vscode.window.showInformationMessage('Please open a file first.');
+            return;
+        }
 
         const selection = editor.selection;
         const selectedText = editor.document.getText(selection);
 
-        if (selectedText) {
-            const prompt = await vscode.window.showInputBox({
-                prompt: "What do you want to do with this code?",
-                placeHolder: "e.g., refactor, add comments, fix..."
-            });
-            if (!prompt) return;
-
-            await vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: "Cody is thinking...",
-                cancellable: false
-            }, async () => {
-                const response = await makeApiCall(prompt, editor.document.languageId, selectedText);
-                if (response.data.code) {
-                    editor.edit(editBuilder => {
-                        editBuilder.replace(selection, response.data.code);
-                    });
-                    vscode.window.showInformationMessage('Cody has updated your code!');
-                }
-            });
-        } else {
+        if (!selectedText) {
             vscode.window.showInformationMessage('Please select some code first.');
+            return;
         }
+
+        const prompt = await vscode.window.showInputBox({
+            prompt: "What do you want to do with this code?",
+            placeHolder: "e.g., refactor, add comments, optimize..."
+        });
+        
+        if (!prompt) return;
+
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Cody is thinking...",
+            cancellable: false
+        }, async () => {
+            const response = await apiClient.generateCode(
+                prompt, 
+                editor.document.languageId, 
+                selectedText
+            );
+
+            if (response.success && response.data?.code) {
+                await editor.edit(editBuilder => {
+                    editBuilder.replace(selection, response.data!.code);
+                });
+                vscode.window.showInformationMessage('Cody has updated your code!');
+            } else {
+                throw new Error(response.error || 'Failed to generate code');
+            }
+        });
     });
 
     // COMMAND: Explain Code
     let explainCodeDisposable = registerCommand('cody.explainCode', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor) return;
+        if (!editor) {
+            vscode.window.showInformationMessage('Please open a file first.');
+            return;
+        }
         
         const selectedText = editor.document.getText(editor.selection);
         if (!selectedText) {
@@ -827,10 +757,16 @@ export function activate(context: vscode.ExtensionContext) {
             cancellable: false
         }, async () => {
             const explainPrompt = "Explain the following code in a clear, concise way. Describe its purpose, inputs, and outputs.";
-            const response = await makeApiCall(explainPrompt, editor.document.languageId, selectedText);
+            const response = await apiClient.generateCode(
+                explainPrompt,
+                editor.document.languageId,
+                selectedText
+            );
 
-            if (response.data.code) {
+            if (response.success && response.data?.code) {
                 createExplanationWebview("Cody's Explanation", response.data.code, context);
+            } else {
+                throw new Error(response.error || 'Failed to explain code');
             }
         });
     });
@@ -838,29 +774,41 @@ export function activate(context: vscode.ExtensionContext) {
     // COMMAND: Generate Tests
     let generateTestsDisposable = registerCommand('cody.generateTests', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor) return;
-
-        const selection = editor.selection;
-        const selectedText = editor.document.getText(selection);
+        if (!editor) {
+            vscode.window.showInformationMessage('Please open a file first.');
+            return;
+        }
+        
+        const selectedText = editor.document.getText(editor.selection);
         if (!selectedText) {
-            vscode.window.showInformationMessage('Please select code to generate tests for.');
+            vscode.window.showInformationMessage('Please select some code to generate tests for.');
             return;
         }
 
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: "Cody is writing tests...",
+            title: "Cody is generating tests...",
             cancellable: false
         }, async () => {
-            const testPrompt = "Write comprehensive unit tests for the following code. Use a popular testing framework for the language. Do not include the original code in the response.";
-            const response = await makeApiCall(testPrompt, editor.document.languageId, selectedText);
+            const testPrompt = "Generate comprehensive unit tests for the following code. Include edge cases and proper assertions.";
+            const response = await apiClient.generateCode(
+                testPrompt,
+                editor.document.languageId,
+                selectedText
+            );
 
-            if (response.data.code) {
-                const insertPosition = new vscode.Position(selection.end.line + 1, 0);
-                editor.edit(editBuilder => {
-                    editBuilder.insert(insertPosition, "\n" + response.data.code);
-                });
-                vscode.window.showInformationMessage('Cody has added unit tests!');
+            if (response.success && response.data?.code) {
+                // Create a new file with tests
+                const testFileName = `${path.basename(editor.document.fileName, path.extname(editor.document.fileName))}.test${path.extname(editor.document.fileName)}`;
+                const testFileUri = vscode.Uri.file(path.join(path.dirname(editor.document.fileName), testFileName));
+                
+                await vscode.workspace.fs.writeFile(testFileUri, Buffer.from(response.data.code, 'utf8'));
+                const testDocument = await vscode.workspace.openTextDocument(testFileUri);
+                await vscode.window.showTextDocument(testDocument);
+                
+                vscode.window.showInformationMessage(`Test file created: ${testFileName}`);
+            } else {
+                throw new Error(response.error || 'Failed to generate tests');
             }
         });
     });
@@ -868,7 +816,10 @@ export function activate(context: vscode.ExtensionContext) {
     // COMMAND: Fix Bug
     let fixBugDisposable = registerCommand('cody.fixBug', async () => {
         const editor = vscode.window.activeTextEditor;
-        if (!editor) return;
+        if (!editor) {
+            vscode.window.showInformationMessage('Please open a file first.');
+            return;
+        }
 
         const selection = editor.selection;
         const selectedText = editor.document.getText(selection);
@@ -889,15 +840,21 @@ export function activate(context: vscode.ExtensionContext) {
             title: "Cody is fixing the bug...",
             cancellable: false
         }, async () => {
-            const response = await makeBugFixApiCall(selectedText, errorMessage, editor.document.languageId);
+            const response = await apiClient.fixBug(
+                selectedText,
+                errorMessage,
+                editor.document.languageId
+            );
 
-            if (response.data.fixedCode) {
+            if (response.success && response.data?.fixedCode) {
                 createBugFixDiffWebview(
                     "Cody's Bug Fix",
                     selectedText,
                     response.data.fixedCode,
                     context
                 );
+            } else {
+                throw new Error(response.error || 'Failed to fix bug');
             }
         });
     });
@@ -925,10 +882,7 @@ export function activate(context: vscode.ExtensionContext) {
         reindexProjectDisposable
     );
 
-    // Initial project indexing
-    setTimeout(() => {
-        reindexProject();
-    }, 2000); // Wait 2 seconds after activation
+    console.log("Cody LOG: Extension activation complete.");
 }
 
 // HTML content for explanation webview
@@ -1124,4 +1078,123 @@ export function deactivate() {
     if (fileWatcher) {
         fileWatcher.close();
     }
-} 
+}
+
+// File watching for live project awareness
+async function startFileWatching() {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) return;
+
+    try {
+        // Dynamic import for chokidar
+        chokidar = await import('chokidar');
+        
+        const watchPath = workspaceFolder.uri.fsPath;
+        
+        fileWatcher = chokidar.watch(watchPath, {
+            ignored: [
+                '**/node_modules/**',
+                '**/.git/**',
+                '**/dist/**',
+                '**/build/**',
+                '**/*.log',
+                '**/cody_chroma_db/**'
+            ],
+            persistent: true,
+            ignoreInitial: true
+        });
+
+        let reindexTimeout: NodeJS.Timeout;
+
+        fileWatcher.on('all', (event: string, filePath: string) => {
+            // Debounce reindexing to avoid too frequent updates
+            clearTimeout(reindexTimeout);
+            reindexTimeout = setTimeout(() => {
+                if (!isIndexing) {
+                    reindexProject();
+                }
+            }, 5000); // Wait 5 seconds after last change
+        });
+
+        console.log('File watching started for:', watchPath);
+    } catch (error) {
+        console.error('Failed to start file watching:', error);
+    }
+}
+
+// Helper functions
+// Creates and shows a webview panel for displaying explanations
+const createExplanationWebview = (title: string, content: string, extensionContext: vscode.ExtensionContext) => {
+    const panel = vscode.window.createWebviewPanel(
+        'codyExplanation',
+        title,
+        vscode.ViewColumn.Beside,
+        {
+            enableScripts: true
+        }
+    );
+
+    const htmlContent = md.render(content);
+    panel.webview.html = getWebviewContent(title, htmlContent);
+
+    panel.webview.onDidReceiveMessage(
+        message => {
+            switch (message.command) {
+                case 'close':
+                    panel.dispose();
+                    return;
+            }
+        },
+        undefined,
+        extensionContext.subscriptions
+    );
+};
+
+// Creates and shows a diff webview for bug fixes
+const createBugFixDiffWebview = (title: string, originalCode: string, fixedCode: string, extensionContext: vscode.ExtensionContext) => {
+    const panel = vscode.window.createWebviewPanel(
+        'codyBugFix',
+        title,
+        vscode.ViewColumn.Beside,
+        {
+            enableScripts: true
+        }
+    );
+
+    const diffResult = diff.createPatch('code', originalCode, fixedCode, 'Original', 'Fixed');
+    panel.webview.html = getBugFixWebviewContent(title, originalCode, fixedCode, diffResult);
+
+    panel.webview.onDidReceiveMessage(
+        message => {
+            switch (message.command) {
+                case 'applyFix':
+                    applyBugFix(originalCode, fixedCode);
+                    panel.dispose();
+                    return;
+                case 'close':
+                    panel.dispose();
+                    return;
+            }
+        },
+        undefined,
+        extensionContext.subscriptions
+    );
+};
+
+// Apply the bug fix to the editor
+const applyBugFix = (originalCode: string, fixedCode: string) => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
+    const selection = editor.selection;
+    const selectedText = editor.document.getText(selection);
+
+    if (selectedText === originalCode) {
+        editor.edit(editBuilder => {
+            editBuilder.replace(selection, fixedCode);
+        });
+        vscode.window.showInformationMessage('Bug fix applied successfully!');
+    } else {
+        vscode.window.showWarningMessage('Selected code has changed. Please reselect and try again.');
+    }
+}; 

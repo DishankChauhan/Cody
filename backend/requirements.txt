@@ -4,4 +4,5 @@ pydantic
 python-dotenv
 openai
 chromadb
-tiktoken 
+tiktoken
+slowapi 
