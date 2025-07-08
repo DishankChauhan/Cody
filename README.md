@@ -1,4 +1,4 @@
-# Cody AI Code Assistant
+# Cody: AI Code Assistant
 
 A comprehensive AI-powered code assistant that integrates directly into VS Code, providing context-aware code generation, interactive chat, automated bug fixing, and live project awareness.
 
