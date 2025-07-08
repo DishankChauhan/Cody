@@ -7,6 +7,9 @@ A comprehensive AI-powered code assistant that integrates directly into VS Code,
 [Video Demo](https://tinyurl.com/475y4ww5)
 ---
 
+
+![cody diagram](https://github.com/user-attachments/assets/50ab3a40-9d76-4a8c-8efe-1ef55e32aaa9)
+
 ### Phase 1: Basic Web App
 - **Web-based Code Generator**: FastAPI backend with React frontend
 - **Multi-language Support**: Supports multiple programming languages
