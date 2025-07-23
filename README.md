@@ -4,7 +4,9 @@ A comprehensive AI-powered code assistant that integrates directly into VS Code,
 
 ## 🎥 Demo Video
 
-![Cody AI Demo](cody%20recording.mp4)
+[![Cody AI Demo Video](https://img.shields.io/badge/▶️%20Watch%20Demo%20Video-Google%20Drive-red?style=for-the-badge&logo=youtube)](https://drive.google.com/file/d/13DqJivJA5pGYROAb9knnJLGfCPtI6NHm/view?usp=sharing)
+
+*Click above to watch Cody AI in action - context-aware chat, code generation, and intelligent assistance*
 
 ## 🚀 Quick Install
 

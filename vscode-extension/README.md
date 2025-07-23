@@ -4,9 +4,9 @@ Transform your VS Code experience with an AI-powered coding companion that under
 
 ## 🎥 Demo Video
 
-[![Cody AI Demo](https://img.shields.io/badge/Watch%20Demo-▶️%20Video-blue?style=for-the-badge)](https://github.com/DishankChauhan/Cody/blob/main/cody%20recording.mp4)
+[![Cody AI Demo Video](https://img.shields.io/badge/▶️%20Watch%20Demo%20Video-Google%20Drive-red?style=for-the-badge&logo=youtube)](https://drive.google.com/file/d/13DqJivJA5pGYROAb9knnJLGfCPtI6NHm/view?usp=sharing)
 
-*Watch Cody AI in action - context-aware chat, code generation, and intelligent assistance*
+*Click above to watch Cody AI in action - context-aware chat, code generation, and intelligent assistance*
 
 ## ✨ Features
 
