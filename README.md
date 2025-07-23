@@ -19,7 +19,13 @@ Or search "**Cody AI**" in VS Code Extensions panel.
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/cody-dev.cody-ai-personal)](https://marketplace.visualstudio.com/items?itemName=cody-dev.cody-ai-personal)
 [![Rating](https://img.shields.io/visual-studio-marketplace/r/cody-dev.cody-ai-personal)](https://marketplace.visualstudio.com/items?itemName=cody-dev.cody-ai-personal)
 
+## 🏗️ Architecture Diagram
+
+![cody diagram](https://github.com/user-attachments/assets/50ab3a40-9d76-4a8c-8efe-1ef55e32aaa9)
+
 ## ✨ Features
+
+### Phase 1: Basic Web App
 - **Web-based Code Generator**: FastAPI backend with React frontend
 - **Multi-language Support**: Supports multiple programming languages
 - **Syntax Highlighting**: Beautiful code display with syntax highlighting
