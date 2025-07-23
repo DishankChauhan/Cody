@@ -2,7 +2,7 @@
   "name": "cody-ai-personal",
   "displayName": "Cody AI",
   "description": "AI-powered coding companion with context-aware chat, code generation, bug fixes, and project intelligence. Transform your VS Code experience.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "cody-dev",
   "engines": {
     "vscode": "^1.80.0"
