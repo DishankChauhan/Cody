@@ -25,11 +25,26 @@ export class ConfigManager {
     private loadConfiguration(): CodyConfiguration {
         const config = vscode.workspace.getConfiguration('cody');
         
+        const backendUrl = config.get<string>('backendUrl') || 'http://localhost:8000';
+        const maxRetries = Math.max(1, Math.min(5, config.get<number>('maxRetries') || 3));
+        const requestTimeout = Math.max(5000, Math.min(60000, config.get<number>('requestTimeout') || 30000));
+        const debugMode = config.get<boolean>('debugMode') || false;
+
+        // Log configuration in debug mode
+        if (debugMode) {
+            console.log('Cody configuration loaded:', {
+                backendUrl,
+                maxRetries,
+                requestTimeout,
+                debugMode
+            });
+        }
+
         return {
-            backendUrl: config.get<string>('backendUrl') || 'http://localhost:8000',
-            maxRetries: config.get<number>('maxRetries') || 3,
-            requestTimeout: config.get<number>('requestTimeout') || 30000, // 30 seconds
-            debugMode: config.get<boolean>('debugMode') || false
+            backendUrl: backendUrl.replace(/\/$/, ''), // Remove trailing slash
+            maxRetries,
+            requestTimeout,
+            debugMode
         };
     }
 
@@ -44,11 +59,19 @@ export class ConfigManager {
     public async checkBackendConnection(): Promise<boolean> {
         try {
             const axios = await import('axios');
-            const response = await axios.default.get(`${this.config.backendUrl}/`, {
+            const response = await axios.default.get(`${this.config.backendUrl}/health`, {
                 timeout: 5000
             });
-            return response.status === 200;
+            
+            if (this.config.debugMode) {
+                console.log('Backend health check response:', response.data);
+            }
+
+            return response.status === 200 && response.data?.status === 'healthy';
         } catch (error) {
+            if (this.config.debugMode) {
+                console.error('Backend health check failed:', error);
+            }
             return false;
         }
     }

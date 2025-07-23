@@ -1,18 +1,47 @@
 {
-  "name": "cody-personal-assistant",
-  "displayName": "Cody - Personal Assistant",
-  "description": "Your personal code assistant, right in VS Code.",
-  "version": "0.0.1",
+  "name": "cody-ai-personal",
+  "displayName": "Cody AI",
+  "description": "AI-powered coding companion with context-aware chat, code generation, bug fixes, and project intelligence. Transform your VS Code experience.",
+  "version": "1.0.2",
   "publisher": "cody-dev",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
+    "AI",
+    "Machine Learning",
+    "Programming Languages",
     "Other"
   ],
+  "keywords": [
+    "ai",
+    "assistant",
+    "chatgpt",
+    "openai",
+    "code generation",
+    "coding assistant",
+    "copilot alternative",
+    "bug fix",
+    "test generation",
+    "refactoring",
+    "explanation",
+    "context-aware",
+    "vector database"
+  ],
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "bugs": {
+    "url": "https://github.com/DishankChauhan/Cody/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DishankChauhan/Cody.git"
+  },
+  "homepage": "https://github.com/DishankChauhan/Cody#readme",
   "activationEvents": [
-    "onView:codyChat",
-    "onCommand:cody.generateCode",
     "onStartupFinished"
   ],
   "main": "./out/extension.js",
@@ -156,3 +185,4 @@
     "diff": "^5.1.0"
   }
 }
+ 

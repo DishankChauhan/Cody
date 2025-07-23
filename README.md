@@ -2,12 +2,24 @@
 
 A comprehensive AI-powered code assistant that integrates directly into VS Code, providing context-aware code generation, interactive chat, automated bug fixing, and live project awareness.
 
-## 🚀 Features
+## 🎥 Demo Video
 
-[Video Demo](https://tinyurl.com/475y4ww5)
----
+![Cody AI Demo](cody%20recording.mp4)
 
-### Phase 1: Basic Web App
+## 🚀 Quick Install
+
+**Install from VS Code Marketplace:**
+[![Install Extension](https://img.shields.io/badge/Install%20from-VS%20Code%20Marketplace-blue?style=for-the-badge&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=cody-dev.cody-ai-personal)
+
+Or search "**Cody AI**" in VS Code Extensions panel.
+
+## 📊 Extension Stats
+
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/cody-dev.cody-ai-personal?label=VS%20Code%20Marketplace&logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=cody-dev.cody-ai-personal)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/cody-dev.cody-ai-personal)](https://marketplace.visualstudio.com/items?itemName=cody-dev.cody-ai-personal)
+[![Rating](https://img.shields.io/visual-studio-marketplace/r/cody-dev.cody-ai-personal)](https://marketplace.visualstudio.com/items?itemName=cody-dev.cody-ai-personal)
+
+## ✨ Features
 - **Web-based Code Generator**: FastAPI backend with React frontend
 - **Multi-language Support**: Supports multiple programming languages
 - **Syntax Highlighting**: Beautiful code display with syntax highlighting
@@ -219,6 +231,12 @@ npm run compile
 
 MIT License - see LICENSE file for details.
 
+## 👨‍💻 Author
+
+**Dishank Chauhan**
+- GitHub: [@DishankChauhan](https://github.com/DishankChauhan)
+- Extension: [Cody AI on VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cody-dev.cody-ai-personal)
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -226,6 +244,12 @@ MIT License - see LICENSE file for details.
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+---
+
+**Made with ❤️ by [Dishank Chauhan](https://github.com/DishankChauhan)**
+
+*Transform your coding experience with AI-powered assistance!*
 
 ## 🙏 Acknowledgments
 

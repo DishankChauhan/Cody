@@ -1,0 +1,41 @@
+# VS Code Extension Ignore File
+# Exclude unnecessary files from the extension package
+
+# Development files
+src/
+coverage/
+node_modules/
+*.ts
+*.map
+.vscode/
+jest.config.js
+tsconfig.json
+
+# Documentation (keep only essential)
+DEPLOYMENT_GUIDE.md
+ICON_INSTRUCTIONS.md
+
+# Large media files (videos are too big for extension package)
+*.mp4
+*.mov
+*.avi
+icon-original.png
+
+# Build artifacts
+out/test/
+*.log
+.npm/
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package manager files
+package-lock.json
+yarn.lock
+
+# Test files
+test/
+**/*.test.js
+**/*.spec.js
